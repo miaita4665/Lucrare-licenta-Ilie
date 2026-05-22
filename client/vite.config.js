@@ -8,8 +8,12 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    host: true,
     proxy: {
-      "/flights": "http://localhost:3000"
+      "/flights": {
+        target: "http://node_server:5000",
+        changeOrigin: true
+      }
     }
   }
 })
