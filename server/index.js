@@ -7,6 +7,7 @@ const passport = require('./config/passport');
 const {sequelize} = require('./models');
 const seedRoles = require('./seedRoles');
 const flightsRouter = require("./routes/flights")
+
 const PORT = process.env.PORT || 5000;
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use("/flights", flightsRouter)
+app.use("/hotels", require("./routes/hotels"))
 
 //  Routes 
 app.use('/api/auth', require('./routes/authRoutes'));
