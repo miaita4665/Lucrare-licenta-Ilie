@@ -16,7 +16,11 @@ export default defineConfig({
       },
       "/hotels": {
         target: "http://node_server:5000",
-         changeOrigin: true
+        changeOrigin: true
+      },
+      "/bookings": { 
+        target: "http://node_server:5000",
+        changeOrigin: true
       }
     }
   }

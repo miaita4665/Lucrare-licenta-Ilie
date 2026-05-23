@@ -23,6 +23,7 @@ app.use(cookieParser());
 app.use(passport.initialize());
 app.use("/flights", flightsRouter)
 app.use("/hotels", require("./routes/hotels"))
+app.use("/bookings", require("./routes/bookings"))
 
 //  Routes 
 app.use('/api/auth', require('./routes/authRoutes'));

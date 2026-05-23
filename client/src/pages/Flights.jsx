@@ -1,8 +1,10 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"   
 
 export default function Flights() {
   const [form, setForm] = useState({ from: "", to: "", date: "" })
   const [results, setResults] = useState([])
+  const navigate = useNavigate()                  
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -35,7 +37,12 @@ export default function Flights() {
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-blue-400">${flight.price}</p>
-              <button className="mt-2 bg-blue-600 px-4 py-2 rounded">Book</button>
+              <button
+                onClick={() => navigate('/booking', { state: { flight } })}
+                className="mt-2 bg-blue-600 px-4 py-2 rounded"
+              >
+                Book
+              </button>
             </div>
           </div>
         ))}
