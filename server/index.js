@@ -24,6 +24,8 @@ app.use(passport.initialize());
 app.use("/flights", flightsRouter)
 app.use("/hotels", require("./routes/hotels"))
 app.use("/bookings", require("./routes/bookings"))
+app.use("/cities", require("./routes/cities"))
+app.use("/airports", require("./routes/airports"))
 
 //  Routes 
 app.use('/api/auth', require('./routes/authRoutes'));

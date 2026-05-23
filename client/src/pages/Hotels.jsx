@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { MapPin, Star, BedDouble } from "lucide-react"
 
@@ -17,17 +17,43 @@ const ATTRIBUTE_LABELS = {
 
 export default function Hotels() {
   const [location, setLocation] = useState("")
+  const [suggestions, setSuggestions] = useState([])
+  const [selectedCity, setSelectedCity] = useState(null)
   const [results, setResults] = useState([])
   const [preferences, setPreferences] = useState({})
   const navigate = useNavigate()
+  const debounceRef = useRef(null)
+
+  useEffect(() => {
+    if (location.length < 2) {
+      setSuggestions([])
+      return
+    }
+
+    // Debounce so we don't hit the server on every keystroke
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/cities/search?q=${encodeURIComponent(location)}`)
+        const data = await res.json()
+        setSuggestions(data)
+      } catch {
+        setSuggestions([])
+      }
+    }, 250)
+  }, [location])
+
+  const handleSelect = (city) => {
+    setLocation(city.name)
+    setSelectedCity(city)
+    setSuggestions([])
+  }
 
   const fetchPreferences = async () => {
     try {
       const res = await fetch("/bookings/my")
       if (!res.ok) return {}
       const bookings = await res.json()
-
-      // Count attribute frequency across all past hotel bookings
       const freq = {}
       bookings.forEach(booking => {
         booking.items
@@ -45,14 +71,15 @@ export default function Hotels() {
   }
 
   const handleSearch = async () => {
+    if (!selectedCity) return
+
     const [hotelsRes, prefs] = await Promise.all([
-      fetch(`/hotels/search?location=${location}`).then(r => r.json()),
+      fetch(`/hotels/search?location=${selectedCity.name}`).then(r => r.json()),
       fetchPreferences(),
     ])
 
     setPreferences(prefs)
 
-    // Score each hotel by how many attributes match user preferences
     const scored = hotelsRes.map(hotel => {
       const score = (hotel.attributes ?? []).reduce((sum, attr) => {
         return sum + (prefs[attr] ?? 0)
@@ -60,9 +87,7 @@ export default function Hotels() {
       return { ...hotel, _score: score }
     })
 
-    // Sort by score descending, fallback to price
     scored.sort((a, b) => b._score - a._score || a.base_price - b.base_price)
-
     setResults(scored)
   }
 
@@ -71,17 +96,48 @@ export default function Hotels() {
       <h1 className="text-3xl font-bold text-white">Hotels</h1>
 
       <div className="mt-6 flex gap-4">
-        <div className="flex items-center bg-slate-700 rounded px-3 flex-1">
-          <MapPin className="w-4 h-4 text-slate-400 mr-2" />
-          <input
-            placeholder="Search by city (e.g. Paris)"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="bg-transparent text-white p-2 w-full outline-none"
-          />
+        <div className="relative flex-1">
+          <div className="flex items-center bg-slate-700 rounded px-3">
+            <MapPin className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
+            <input
+              placeholder="Search by city (e.g. Paris)"
+              value={location}
+              onChange={(e) => {
+                setLocation(e.target.value)
+                setSelectedCity(null)
+              }}
+              className="bg-transparent text-white p-2 w-full outline-none"
+            />
+          </div>
+
+          {suggestions.length > 0 && (
+            <ul className="absolute z-10 top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded-lg overflow-hidden shadow-lg">
+              {suggestions.map(city => (
+                <li
+  key={city.id}
+  onClick={() => handleSelect(city)}
+  className="px-4 py-2 text-white hover:bg-slate-700 cursor-pointer flex justify-between items-center"
+>
+  <span>{city.name}</span>
+  <span className="text-slate-400 text-xs">{city.admin1}, {city.country}</span>
+</li>
+              ))}
+            </ul>
+          )}
         </div>
-        <button onClick={handleSearch} className="bg-blue-600 text-white px-4 py-2 rounded">Search</button>
+
+        <button
+          onClick={handleSearch}
+          disabled={!selectedCity}
+          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+        >
+          Search
+        </button>
       </div>
+
+      {!selectedCity && location.length > 0 && suggestions.length === 0 && (
+        <p className="text-red-400 text-sm mt-2">No city found — try a different name</p>
+      )}
 
       {Object.keys(preferences).length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2 items-center">
@@ -119,7 +175,6 @@ export default function Hotels() {
                   <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                 ))}
               </div>
-
               <div className="flex flex-wrap gap-1 mt-2">
                 {hotel.attributes?.map(attr => (
                   <span

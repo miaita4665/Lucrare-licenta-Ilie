@@ -21,6 +21,14 @@ export default defineConfig({
       "/bookings": { 
         target: "http://node_server:5000",
         changeOrigin: true
+      },
+      "/cities": {
+         target: "http://node_server:5000",
+          changeOrigin: true
+      },
+      "/airports": {
+        target: "http://node_server:5000",
+        changeOrigin: true
       }
     }
   }
