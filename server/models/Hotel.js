@@ -33,6 +33,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'EUR',
     },
+      attributes: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: true,
+      defaultValue: [],
+    },
   }, {
     tableName: 'hotels',
     timestamps: false,

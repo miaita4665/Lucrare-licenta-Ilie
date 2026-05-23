@@ -121,6 +121,7 @@ router.post("/",protect, async (req, res) => {
         description: hotel.description ?? null,
         base_price: hotel.base_price,
         currency: hotel.currency,
+        attributes: hotel.attributes ?? [], 
       }, { transaction: t })
 
       await BookingItem.create({
@@ -140,5 +141,6 @@ router.post("/",protect, async (req, res) => {
     res.status(500).json({ error: "Failed to create booking" })
   }
 })
+
 
 module.exports = router
