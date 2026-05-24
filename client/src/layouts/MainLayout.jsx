@@ -17,7 +17,7 @@ export default function MainLayout() {
           to="/"
           className="text-lg font-semibold text-white tracking-tight"
         >
-          rez<span className="text-blue-400">io</span>
+          Rez<span className="text-blue-400">Io</span>
         </Link>
 
         <div className="flex items-center gap-8 text-sm">
@@ -89,7 +89,7 @@ export default function MainLayout() {
       </main>
 
       <footer className="border-t border-slate-800 px-8 py-6 text-center text-slate-600 text-sm">
-        © 2026 rezio — Bachelor's Degree Project
+        © 2026 RezIo- Proiect de Licență
       </footer>
     </div>
   );
