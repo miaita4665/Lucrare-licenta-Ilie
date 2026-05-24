@@ -1,5 +1,7 @@
 const express = require('express');
+const Stripe = require("stripe")
 const router = express.Router();
+const stripe = Stripe(process.env.STRIPE_API)
 const {
   sequelize,
   Booking,
@@ -174,5 +176,38 @@ router.post('/', protect, async (req, res) => {
     res.status(500).json({ error: 'Failed to create booking' });
   }
 });
+// POST /bookings/payment-intent
+router.post("/payment-intent", protect, async (req, res) => {
+  const { bookingId } = req.body
+
+  try {
+    const booking = await Booking.findByPk(bookingId)
+    if (!booking) return res.status(404).json({ error: "Booking not found" })
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(parseFloat(booking.total_amount) * 100), // cents
+      currency: booking.currency.toLowerCase(),
+      metadata: { bookingId: String(bookingId) },
+    })
+
+    res.json({ clientSecret: paymentIntent.client_secret })
+  } catch (err) {
+    console.error("Stripe error:", err)
+    res.status(500).json({ error: "Failed to create payment intent" })
+  }
+})
+
+// PATCH /bookings/:id/confirm
+router.patch("/:id/confirm", protect, async (req, res) => {
+  try {
+    const booking = await Booking.findByPk(req.params.id)
+    if (!booking) return res.status(404).json({ error: "Booking not found" })
+
+    await booking.update({ status: "Confirmed" })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: "Failed to confirm booking" })
+  }
+})
 
 module.exports = router;
