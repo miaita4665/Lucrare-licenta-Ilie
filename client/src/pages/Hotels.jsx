@@ -177,10 +177,14 @@ export default function Hotels() {
                 <p className="text-slate-400">{hotel.location}</p>
               </div>
               <div className="flex items-center gap-1 mt-1">
-                {Array.from({ length: hotel.stars }).map((_, i) => (
+                {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
-                    className="w-4 h-4 text-yellow-400 fill-yellow-400"
+                    className={`w-4 h-4 ${
+                      i < hotel.stars
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-slate-500'
+                    }`}
                   />
                 ))}
               </div>
