@@ -1,48 +1,54 @@
-import { useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Booking() {
-  const { state } = useLocation()
-  const navigate = useNavigate()
-  const { flight, hotel } = state ?? {}
+  const { state } = useLocation();
+  const navigate = useNavigate();
+  const { flight, hotel } = state ?? {};
 
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    passport: "",
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+    firstName: '',
+    lastName: '',
+    email: '',
+    passport: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      const res = await fetch("/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ flight, hotel, passenger: form }),
-      })
+      });
 
-      const data = await res.json()
+      const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error)
+      if (!res.ok) throw new Error(data.error);
 
-      navigate("/checkout", {
-        state: { flight, hotel, passenger: form, bookingId: data.bookingId, total: data.total }
-      })
+      navigate('/checkout', {
+        state: {
+          flight,
+          hotel,
+          passenger: form,
+          bookingId: data.bookingId,
+          total: data.total,
+        },
+      });
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
@@ -53,15 +59,21 @@ export default function Booking() {
         {flight && (
           <div>
             <p className="text-slate-400 text-sm">Flight</p>
-            <p className="font-bold">{flight.airline} — {flight.from} → {flight.to}</p>
-            <p className="text-slate-400">{flight.departure} · ${flight.price}</p>
+            <p className="font-bold">
+              {flight.airline} — {flight.from} → {flight.to}
+            </p>
+            <p className="text-slate-400">
+              {flight.departure} · ${flight.price}
+            </p>
           </div>
         )}
         {hotel && (
-          <div className={flight ? "mt-3 pt-3 border-t border-slate-700" : ""}>
+          <div className={flight ? 'mt-3 pt-3 border-t border-slate-700' : ''}>
             <p className="text-slate-400 text-sm">Hotel</p>
             <p className="font-bold">{hotel.name}</p>
-            <p className="text-slate-400">{hotel.location} · {hotel.currency} {hotel.base_price}/night</p>
+            <p className="text-slate-400">
+              {hotel.location} · {hotel.currency} {hotel.base_price}/night
+            </p>
           </div>
         )}
       </div>
@@ -117,9 +129,9 @@ export default function Booking() {
           disabled={loading}
           className="mt-4 bg-blue-600 text-white px-6 py-3 rounded font-bold disabled:opacity-50"
         >
-          {loading ? "Saving..." : "Continue to checkout →"}
+          {loading ? 'Saving...' : 'Continue to checkout →'}
         </button>
       </form>
     </div>
-  )
+  );
 }

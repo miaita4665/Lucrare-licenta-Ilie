@@ -4,8 +4,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User, Role } = require('../models');
 
-   
-
 const signToken = (userId) =>
   jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: '7d',
@@ -13,16 +11,16 @@ const signToken = (userId) =>
 
 const sendTokenCookie = (res, token) => {
   res.cookie('token', token, {
-    httpOnly: true,             // not accessible via JS
+    httpOnly: true, // not accessible via JS
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
   });
 };
 
-//  Register 
+//  Register
 
-const   register = async (req, res) => {
+const register = async (req, res) => {
   try {
     const { first_name, last_name, email, password, phone } = req.body;
 
@@ -34,9 +32,13 @@ const   register = async (req, res) => {
 
     // Get default role (Registered User = role id 2)
     // Make sure you seed roles first or adjust this id
-    const role = await Role.findOne({ where: { role_name: 'Registered User' } });
+    const role = await Role.findOne({
+      where: { role_name: 'Registered User' },
+    });
     if (!role) {
-      return res.status(500).json({ message: 'Default role not found. Please seed roles.' });
+      return res
+        .status(500)
+        .json({ message: 'Default role not found. Please seed roles.' });
     }
 
     // Hash password
@@ -67,7 +69,9 @@ const   register = async (req, res) => {
     });
   } catch (err) {
     console.error('Register error:', err);
-    return res.status(500).json({ message: 'Server error during registration.' });
+    return res
+      .status(500)
+      .json({ message: 'Server error during registration.' });
   }
 };
 
@@ -143,4 +147,4 @@ const me = async (req, res) => {
   }
 };
 
-module.exports = { register, login, logout,me};
+module.exports = { register, login, logout, me };

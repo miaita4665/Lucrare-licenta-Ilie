@@ -4,30 +4,32 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const passport = require('./config/passport');
-const {sequelize} = require('./models');
+const { sequelize } = require('./models');
 const seedRoles = require('./seedRoles');
-const flightsRouter = require("./routes/flights")
+const flightsRouter = require('./routes/flights');
 
 const PORT = process.env.PORT || 5000;
 
 const app = express();
 
-//  Middlewares 
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  credentials: true,
-}));
+//  Middlewares
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());
-app.use("/flights", flightsRouter)
-app.use("/hotels", require("./routes/hotels"))
-app.use("/bookings", require("./routes/bookings"))
-app.use("/cities", require("./routes/cities"))
-app.use("/airports", require("./routes/airports"))
+app.use('/flights', flightsRouter);
+app.use('/hotels', require('./routes/hotels'));
+app.use('/bookings', require('./routes/bookings'));
+app.use('/cities', require('./routes/cities'));
+app.use('/airports', require('./routes/airports'));
 
-//  Routes 
+//  Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 
 const startApp = async () => {

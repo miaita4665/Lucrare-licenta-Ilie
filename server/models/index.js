@@ -9,18 +9,18 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
 require('dotenv').config();
 console.log('DATABASE_URL:', process.env.DATABASE_URL);
 // Import models
-const Role          = require('./Role')(sequelize, DataTypes);
-const User          = require('./User')(sequelize, DataTypes);
-const Hotel         = require('./Hotel')(sequelize, DataTypes);
-const Flight        = require('./Flight')(sequelize, DataTypes);
+const Role = require('./Role')(sequelize, DataTypes);
+const User = require('./User')(sequelize, DataTypes);
+const Hotel = require('./Hotel')(sequelize, DataTypes);
+const Flight = require('./Flight')(sequelize, DataTypes);
 const FlightSegment = require('./FlightSegment')(sequelize, DataTypes);
-const Booking       = require('./Booking')(sequelize, DataTypes);
-const BookingItem   = require('./BookingItem')(sequelize, DataTypes);
-const Traveler      = require('./Traveler')(sequelize, DataTypes);
-const Ticket        = require('./Ticket')(sequelize, DataTypes);
-const Review        = require('./Review')(sequelize, DataTypes);
-const PromoCode     = require('./PromoCode')(sequelize, DataTypes);
-const Package       = require('./Package')(sequelize, DataTypes);
+const Booking = require('./Booking')(sequelize, DataTypes);
+const BookingItem = require('./BookingItem')(sequelize, DataTypes);
+const Traveler = require('./Traveler')(sequelize, DataTypes);
+const Ticket = require('./Ticket')(sequelize, DataTypes);
+const Review = require('./Review')(sequelize, DataTypes);
+const PromoCode = require('./PromoCode')(sequelize, DataTypes);
+const Package = require('./Package')(sequelize, DataTypes);
 
 // ── Associations ──────────────────────────────────────────────
 
@@ -37,7 +37,10 @@ User.hasMany(Review, { foreignKey: 'user_id' });
 Review.belongsTo(User, { foreignKey: 'user_id' });
 
 // User → PromoCodes (created_by_admin_id)
-User.hasMany(PromoCode, { foreignKey: 'created_by_admin_id', as: 'CreatedPromoCodes' });
+User.hasMany(PromoCode, {
+  foreignKey: 'created_by_admin_id',
+  as: 'CreatedPromoCodes',
+});
 PromoCode.belongsTo(User, { foreignKey: 'created_by_admin_id', as: 'Admin' });
 
 // Hotel → Reviews

@@ -10,7 +10,9 @@ const protect = async (req, res, next) => {
     const token = req.cookies?.token;
 
     if (!token) {
-      return res.status(401).json({ message: 'Not authenticated. Please log in.' });
+      return res
+        .status(401)
+        .json({ message: 'Not authenticated. Please log in.' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -31,7 +33,7 @@ const protect = async (req, res, next) => {
   }
 };
 
-//  Restrict 
+//  Restrict
 // Usage: restrict('Admin', 'Support Agent')
 
 const restrict = (...roles) => {

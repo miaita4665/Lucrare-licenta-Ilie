@@ -1,22 +1,26 @@
-import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { MapPin, Plane,Hotel } from 'lucide-react'
-
+import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, Plane, Hotel } from 'lucide-react';
 
 function CityInput({ placeholder, value, onChange, onSelect }) {
-  const [suggestions, setSuggestions] = useState([])
-  const debounceRef = useRef(null)
+  const [suggestions, setSuggestions] = useState([]);
+  const debounceRef = useRef(null);
 
   const handleChange = (e) => {
-    onChange(e.target.value)
-    clearTimeout(debounceRef.current)
-    if (e.target.value.length < 2) { setSuggestions([]); return }
+    onChange(e.target.value);
+    clearTimeout(debounceRef.current);
+    if (e.target.value.length < 2) {
+      setSuggestions([]);
+      return;
+    }
     debounceRef.current = setTimeout(async () => {
-      const res = await fetch(`/cities/search?q=${encodeURIComponent(e.target.value)}`)
-      const data = await res.json()
-      setSuggestions(data)
-    }, 250)
-  }
+      const res = await fetch(
+        `/cities/search?q=${encodeURIComponent(e.target.value)}`
+      );
+      const data = await res.json();
+      setSuggestions(data);
+    }, 250);
+  };
 
   return (
     <div className="relative">
@@ -28,36 +32,46 @@ function CityInput({ placeholder, value, onChange, onSelect }) {
       />
       {suggestions.length > 0 && (
         <ul className="absolute z-20 top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded-lg overflow-hidden shadow-lg">
-          {suggestions.map(city => (
+          {suggestions.map((city) => (
             <li
               key={city.id}
-              onClick={() => { onSelect(city); setSuggestions([]) }}
+              onClick={() => {
+                onSelect(city);
+                setSuggestions([]);
+              }}
               className="px-4 py-2 text-white hover:bg-slate-700 cursor-pointer flex justify-between text-sm"
             >
               <span>{city.name}</span>
-              <span className="text-slate-400 text-xs">{city.admin1}, {city.country}</span>
+              <span className="text-slate-400 text-xs">
+                {city.admin1}, {city.country}
+              </span>
             </li>
           ))}
         </ul>
       )}
     </div>
-  )
+  );
 }
 
 function AirportInput({ placeholder, value, onChange, onSelect }) {
-  const [suggestions, setSuggestions] = useState([])
-  const debounceRef = useRef(null)
+  const [suggestions, setSuggestions] = useState([]);
+  const debounceRef = useRef(null);
 
   const handleChange = (e) => {
-    onChange(e.target.value)
-    clearTimeout(debounceRef.current)
-    if (e.target.value.length < 2) { setSuggestions([]); return }
+    onChange(e.target.value);
+    clearTimeout(debounceRef.current);
+    if (e.target.value.length < 2) {
+      setSuggestions([]);
+      return;
+    }
     debounceRef.current = setTimeout(async () => {
-      const res = await fetch(`/airports/search?q=${encodeURIComponent(e.target.value)}`)
-      const data = await res.json()
-      setSuggestions(data)
-    }, 250)
-  }
+      const res = await fetch(
+        `/airports/search?q=${encodeURIComponent(e.target.value)}`
+      );
+      const data = await res.json();
+      setSuggestions(data);
+    }, 250);
+  };
 
   return (
     <div className="relative">
@@ -69,43 +83,49 @@ function AirportInput({ placeholder, value, onChange, onSelect }) {
       />
       {suggestions.length > 0 && (
         <ul className="absolute z-20 top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded-lg overflow-hidden shadow-lg">
-          {suggestions.map(a => (
+          {suggestions.map((a) => (
             <li
               key={a.code}
-              onClick={() => { onSelect(a); setSuggestions([]) }}
+              onClick={() => {
+                onSelect(a);
+                setSuggestions([]);
+              }}
               className="px-4 py-2 text-white hover:bg-slate-700 cursor-pointer flex justify-between text-sm"
             >
-              <span><span className="text-blue-400 font-bold mr-2">{a.code}</span>{a.city}</span>
+              <span>
+                <span className="text-blue-400 font-bold mr-2">{a.code}</span>
+                {a.city}
+              </span>
               <span className="text-slate-400 text-xs">{a.country}</span>
             </li>
           ))}
         </ul>
       )}
     </div>
-  )
+  );
 }
 
 export default function Landing() {
-  const [tab, setTab] = useState('flights')
-  const navigate = useNavigate()
+  const [tab, setTab] = useState('flights');
+  const navigate = useNavigate();
 
-  const [fromVal, setFromVal] = useState('')
-  const [toVal, setToVal] = useState('')
-  const [selectedFrom, setSelectedFrom] = useState(null)
-  const [selectedTo, setSelectedTo] = useState(null)
-  const [date, setDate] = useState('')
+  const [fromVal, setFromVal] = useState('');
+  const [toVal, setToVal] = useState('');
+  const [selectedFrom, setSelectedFrom] = useState(null);
+  const [selectedTo, setSelectedTo] = useState(null);
+  const [date, setDate] = useState('');
 
-  const [hotelVal, setHotelVal] = useState('')
-  const [selectedCity, setSelectedCity] = useState(null)
+  const [hotelVal, setHotelVal] = useState('');
+  const [selectedCity, setSelectedCity] = useState(null);
 
   const handleSearch = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     if (tab === 'flights' && selectedFrom && selectedTo && date) {
-      navigate('/flights', { state: { selectedFrom, selectedTo, date } })
+      navigate('/flights', { state: { selectedFrom, selectedTo, date } });
     } else if (tab === 'hotels' && selectedCity) {
-      navigate('/hotels', { state: { selectedCity } })
+      navigate('/hotels', { state: { selectedCity } });
     }
-  }
+  };
 
   return (
     <div>
@@ -114,11 +134,13 @@ export default function Landing() {
 
         <div className="relative z-10 text-center mb-10">
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-4">
-            Your next trip,<br />
+            Your next trip,
+            <br />
             <span className="text-sky-400">simplified.</span>
           </h1>
           <p className="text-slate-400 text-lg max-w-xl mx-auto">
-            Search flights and hotels, book your trip, and manage everything in one place.
+            Search flights and hotels, book your trip, and manage everything in
+            one place.
           </p>
         </div>
 
@@ -129,13 +151,19 @@ export default function Landing() {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`px-5 py-2 rounded-full text-sm font-medium transition capitalize ${
-                  tab === t ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'
+                  tab === t
+                    ? 'bg-sky-500 text-white'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {t === 'flights' ? (
-                  <span className="flex items-center gap-1"><Plane className="w-4 h-4" /> Flights</span>
-                    ) : (
-                  <span className="flex items-center gap-1"><Hotel className="w-4 h-4" /> Hotels</span>
+                  <span className="flex items-center gap-1">
+                    <Plane className="w-4 h-4" /> Flights
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <Hotel className="w-4 h-4" /> Hotels
+                  </span>
                 )}
               </button>
             ))}
@@ -147,14 +175,26 @@ export default function Landing() {
                 <AirportInput
                   placeholder="From (e.g. Bucharest)"
                   value={fromVal}
-                  onChange={(v) => { setFromVal(v); setSelectedFrom(null) }}
-                  onSelect={(a) => { setFromVal(`${a.code} — ${a.city}`); setSelectedFrom(a) }}
+                  onChange={(v) => {
+                    setFromVal(v);
+                    setSelectedFrom(null);
+                  }}
+                  onSelect={(a) => {
+                    setFromVal(`${a.code} — ${a.city}`);
+                    setSelectedFrom(a);
+                  }}
                 />
                 <AirportInput
                   placeholder="To (e.g. London)"
                   value={toVal}
-                  onChange={(v) => { setToVal(v); setSelectedTo(null) }}
-                  onSelect={(a) => { setToVal(`${a.code} — ${a.city}`); setSelectedTo(a) }}
+                  onChange={(v) => {
+                    setToVal(v);
+                    setSelectedTo(null);
+                  }}
+                  onSelect={(a) => {
+                    setToVal(`${a.code} — ${a.city}`);
+                    setSelectedTo(a);
+                  }}
                 />
                 <input
                   type="date"
@@ -167,17 +207,27 @@ export default function Landing() {
               <CityInput
                 placeholder="Where to? (e.g. Paris)"
                 value={hotelVal}
-                onChange={(v) => { setHotelVal(v); setSelectedCity(null) }}
-                onSelect={(c) => { setHotelVal(c.name); setSelectedCity(c) }}
+                onChange={(v) => {
+                  setHotelVal(v);
+                  setSelectedCity(null);
+                }}
+                onSelect={(c) => {
+                  setHotelVal(c.name);
+                  setSelectedCity(c);
+                }}
               />
             )}
 
             <button
               type="submit"
-              disabled={tab === 'flights' ? (!selectedFrom || !selectedTo || !date) : !selectedCity}
+              disabled={
+                tab === 'flights'
+                  ? !selectedFrom || !selectedTo || !date
+                  : !selectedCity
+              }
               className="w-full bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition text-sm"
             >
-              Search 
+              Search
             </button>
           </form>
         </div>
@@ -194,15 +244,19 @@ export default function Landing() {
           ].map(({ city, country }) => (
             <div
               key={city}
-              onClick={() => navigate('/hotels', { state: { selectedCity: { name: city } } })}
+              onClick={() =>
+                navigate('/hotels', { state: { selectedCity: { name: city } } })
+              }
               className="bg-slate-900 border border-slate-800 rounded-2xl p-6 cursor-pointer hover:border-sky-500/50 hover:bg-slate-800 transition group"
             >
-              <div className="font-semibold group-hover:text-sky-400 transition">{city}</div>
+              <div className="font-semibold group-hover:text-sky-400 transition">
+                {city}
+              </div>
               <div className="text-slate-500 text-sm">{country}</div>
             </div>
           ))}
         </div>
       </div>
     </div>
-  )
+  );
 }

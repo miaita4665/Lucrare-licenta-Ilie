@@ -9,7 +9,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL 
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -35,7 +35,9 @@ passport.use(
         }
 
         // Get default role
-        const role = await Role.findOne({ where: { role_name: 'Registered User' } });
+        const role = await Role.findOne({
+          where: { role_name: 'Registered User' },
+        });
 
         // Create new user
         user = await User.create({
