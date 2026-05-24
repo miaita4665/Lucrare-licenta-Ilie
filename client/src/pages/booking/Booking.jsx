@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Booking() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { flight, hotel } = state ?? {};
 
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
+    firstName: user?.first_name ?? '',
+    lastName: user?.last_name ?? '',
+    email: user?.email ?? '',
     passport: '',
   });
   const [loading, setLoading] = useState(false);
@@ -31,17 +33,10 @@ export default function Booking() {
       });
 
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error);
 
       navigate('/checkout', {
-        state: {
-          flight,
-          hotel,
-          passenger: form,
-          bookingId: data.bookingId,
-          total: data.total,
-        },
+        state: { flight, hotel, passenger: form, bookingId: data.bookingId, total: data.total },
       });
     } catch (err) {
       setError(err.message);
@@ -59,11 +54,9 @@ export default function Booking() {
         {flight && (
           <div>
             <p className="text-slate-400 text-sm">Flight</p>
-            <p className="font-bold">
-              {flight.airline} — {flight.from} → {flight.to}
-            </p>
+            <p className="font-bold">{flight.airline} — {flight.fromCity ?? flight.from} → {flight.toCity ?? flight.to}</p>
             <p className="text-slate-400">
-              {flight.departure} · ${flight.price}
+              {new Date(flight.departure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${flight.price}
             </p>
           </div>
         )}
@@ -71,9 +64,7 @@ export default function Booking() {
           <div className={flight ? 'mt-3 pt-3 border-t border-slate-700' : ''}>
             <p className="text-slate-400 text-sm">Hotel</p>
             <p className="font-bold">{hotel.name}</p>
-            <p className="text-slate-400">
-              {hotel.location} · {hotel.currency} {hotel.base_price}/night
-            </p>
+            <p className="text-slate-400">{hotel.location} · {hotel.currency} {hotel.base_price}/night</p>
           </div>
         )}
       </div>
@@ -86,6 +77,7 @@ export default function Booking() {
             <input
               name="firstName"
               required
+              value={form.firstName}
               onChange={handleChange}
               className="mt-1 w-full p-2 rounded bg-slate-700 text-white"
             />
@@ -95,6 +87,7 @@ export default function Booking() {
             <input
               name="lastName"
               required
+              value={form.lastName}
               onChange={handleChange}
               className="mt-1 w-full p-2 rounded bg-slate-700 text-white"
             />
@@ -107,6 +100,7 @@ export default function Booking() {
             name="email"
             type="email"
             required
+            value={form.email}
             onChange={handleChange}
             className="mt-1 w-full p-2 rounded bg-slate-700 text-white"
           />
@@ -117,6 +111,7 @@ export default function Booking() {
           <input
             name="passport"
             required
+            value={form.passport}
             onChange={handleChange}
             className="mt-1 w-full p-2 rounded bg-slate-700 text-white"
           />
