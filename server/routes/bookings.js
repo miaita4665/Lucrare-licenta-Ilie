@@ -11,7 +11,8 @@ const {
   Hotel,
   Flight,
   FlightSegment,
-  PromoCode 
+  PromoCode,
+  User 
 } = require('../models')
 
 router.get('/my', protect, async (req, res) => {
@@ -258,9 +259,10 @@ router.get('/all', protect, restrict('Admin'), async (req, res) => {
   try {
     const bookings = await Booking.findAll({
       include: [
+        { model: User, attributes: ['email'] },
         { model: Traveler, as: 'travelers', attributes: ['first_name', 'last_name', 'document_number'] },
         { model: BookingItem, as: 'items' },
-        { model: PromoCode, attributes: ['code', 'discount_percent'] } // Added PromoCode here too
+        { model: PromoCode, attributes: ['code', 'discount_percent'] } 
       ],
       order: [['created_at', 'DESC']],
     })
@@ -289,6 +291,7 @@ router.get('/all', protect, restrict('Admin'), async (req, res) => {
 
     res.json(enriched)
   } catch (err) {
+    console.error("BOOKINGS FETCH ERROR:", err);
     res.status(500).json({ error: 'Failed to fetch bookings' })
   }
 })

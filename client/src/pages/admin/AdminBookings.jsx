@@ -62,6 +62,11 @@ export default function AdminBookings() {
                   <td className="px-4 py-3 text-slate-400">#{booking.id}</td>
                   <td className="px-4 py-3">
                     {traveler ? `${traveler.first_name} ${traveler.last_name}` : '—'}
+                    {(booking.User?.email || booking.user?.email) && (
+                    <div className="text-xs text-slate-400">
+                      {booking.User?.email || booking.user?.email}
+                    </div>
+                  )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col gap-1">
