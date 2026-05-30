@@ -2,7 +2,7 @@ const express = require('express');
 const Stripe = require("stripe")
 const router = express.Router();
 const stripe = Stripe(process.env.STRIPE_API)
-const { restrict } = require('../middleware/authMiddleware')
+const { restrict, protect } = require('../middleware/authMiddleware')
 const {
   sequelize,
   Booking,
@@ -11,8 +11,8 @@ const {
   Hotel,
   Flight,
   FlightSegment,
-} = require('../models');
-const { protect } = require('../middleware/authMiddleware');
+  PromoCode 
+} = require('../models')
 
 router.get('/my', protect, async (req, res) => {
   try {
@@ -28,6 +28,10 @@ router.get('/my', protect, async (req, res) => {
           model: BookingItem,
           as: 'items',
         },
+        {
+          model: PromoCode, 
+          attributes: ['code', 'discount_percent']
+        }
       ],
       order: [['created_at', 'DESC']],
     });
@@ -177,16 +181,36 @@ router.post('/', protect, async (req, res) => {
     res.status(500).json({ error: 'Failed to create booking' });
   }
 });
-// POST /bookings/payment-intent
 router.post("/payment-intent", protect, async (req, res) => {
-  const { bookingId } = req.body
+  const { bookingId, promoCode, discountedTotal } = req.body
 
   try {
     const booking = await Booking.findByPk(bookingId)
     if (!booking) return res.status(404).json({ error: "Booking not found" })
 
+    let amount = parseFloat(booking.total_amount)
+
+    // Apply promo discount if provided
+    if (promoCode) {
+      const promo = await PromoCode.findOne({ where: { code: promoCode.toUpperCase() } })
+      if (promo && new Date(promo.valid_until) >= new Date()) {
+        const expectedDiscount = amount * (1 - parseFloat(promo.discount_percent) / 100)
+        
+        if (discountedTotal) {
+          const clientTotal = parseFloat(discountedTotal)
+          if (Math.abs(expectedDiscount - clientTotal) < 0.02) {
+            amount = clientTotal
+          } else {
+            amount = expectedDiscount
+          }
+        } else {
+          amount = expectedDiscount
+        }
+      }
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(parseFloat(booking.total_amount) * 100), // cents
+      amount: Math.round(amount * 100),
       currency: booking.currency.toLowerCase(),
       metadata: { bookingId: String(bookingId) },
     })
@@ -201,13 +225,31 @@ router.post("/payment-intent", protect, async (req, res) => {
 // PATCH /bookings/:id/confirm
 router.patch("/:id/confirm", protect, async (req, res) => {
   try {
-    const booking = await Booking.findByPk(req.params.id)
-    if (!booking) return res.status(404).json({ error: "Booking not found" })
+    const { promoCode } = req.body; // Extract the promo code string from React
+    const booking = await Booking.findByPk(req.params.id);
+    
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
 
-    await booking.update({ status: "Confirmed" })
-    res.json({ success: true })
+    const updateData = { status: "Confirmed" };
+    
+    // If React sent a promo code, find its ID and link it to the booking
+    if (promoCode) {
+      const { PromoCode } = require('../models');
+      const promo = await PromoCode.findOne({ 
+        where: { code: promoCode.toUpperCase() } 
+      });
+
+      if (promo) {
+        updateData.promo_code_id = promo.id; // This fixes the null issue!
+      }
+    }
+
+    // Save the status and the promo_code_id (leaving total_amount untouched)
+    await booking.update(updateData);
+    res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Failed to confirm booking" })
+    console.error("Confirm booking error:", err);
+    res.status(500).json({ error: "Failed to confirm booking" });
   }
 })
 
@@ -218,6 +260,7 @@ router.get('/all', protect, restrict('Admin'), async (req, res) => {
       include: [
         { model: Traveler, as: 'travelers', attributes: ['first_name', 'last_name', 'document_number'] },
         { model: BookingItem, as: 'items' },
+        { model: PromoCode, attributes: ['code', 'discount_percent'] } // Added PromoCode here too
       ],
       order: [['created_at', 'DESC']],
     })
@@ -265,4 +308,5 @@ router.patch('/:id/status', protect, restrict('Admin'), async (req, res) => {
     res.status(500).json({ error: 'Failed to update status' })
   }
 })
+
 module.exports = router;

@@ -28,6 +28,8 @@ app.use('/hotels', require('./routes/hotels'));
 app.use('/bookings', require('./routes/bookings'));
 app.use('/cities', require('./routes/cities'));
 app.use('/airports', require('./routes/airports'));
+app.use('/api/promo-codes', require('./routes/promoCodes'))
+app.use('/api/reviews', require('./routes/reviews'))
 
 //  Routes
 app.use('/api/auth', require('./routes/authRoutes'));

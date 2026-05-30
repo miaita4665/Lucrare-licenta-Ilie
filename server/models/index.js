@@ -75,6 +75,10 @@ Package.belongsTo(Flight, { foreignKey: 'flight_id' });
 Hotel.hasMany(Package, { foreignKey: 'hotel_id' });
 Package.belongsTo(Hotel, { foreignKey: 'hotel_id' });
 
+// PromoCode → Bookings
+PromoCode.hasMany(Booking, { foreignKey: 'promo_code_id' });
+Booking.belongsTo(PromoCode, { foreignKey: 'promo_code_id' });
+
 module.exports = {
   sequelize,
   Sequelize,

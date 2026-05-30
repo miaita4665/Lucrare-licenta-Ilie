@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plane, Hotel, Clock, CheckCircle, XCircle, FileText, CreditCard } from 'lucide-react';
+import { Plane, Hotel, Clock, CheckCircle, XCircle, FileText, CreditCard, Tag } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -40,6 +40,38 @@ export default function Dashboard() {
     if (status === 'Confirmed') return 'text-green-400';
     if (status === 'Cancelled') return 'text-red-400';
     return 'text-yellow-400';
+  };
+  const PricingDisplay = ({ booking, size = "normal" }) => {
+    const finalTotal = parseFloat(booking.total_amount);
+    const textSize = size === "large" ? "text-xl" : "text-lg";
+
+    if (booking.PromoCode) {
+      const discountPercent = parseFloat(booking.PromoCode.discount_percent);
+      const originalPrice = finalTotal / (1 - (discountPercent / 100));
+      const discountAmount = originalPrice - finalTotal;
+
+      return (
+        <div className="flex flex-col items-start mt-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-slate-400 line-through text-sm">
+              {booking.currency} {originalPrice.toFixed(2)}
+            </span>
+            <span className={`text-blue-400 font-bold ${textSize}`}>
+              {booking.currency} {finalTotal.toFixed(2)}
+            </span>
+          </div>
+          <span className="text-green-400 text-xs mt-1 bg-green-900/30 flex items-center gap-1 px-2 py-0.5 rounded">
+            <Tag className="w-3 h-3" /> Used {booking.PromoCode.code} (Saved {booking.currency} {discountAmount.toFixed(2)})
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <p className={`text-blue-400 font-bold mt-2 ${textSize}`}>
+        {booking.currency} {finalTotal.toFixed(2)}
+      </p>
+    );
   };
 
   // Modal for booking details
@@ -86,6 +118,7 @@ export default function Dashboard() {
         `Booking #${booking.id}`,
         `Date: ${new Date(booking.created_at).toLocaleDateString()}`,
         `Status: ${booking.status}`,
+        booking.PromoCode ? `Promo Applied: ${booking.PromoCode.code} (-${booking.PromoCode.discount_percent}%)` : '',
         ``,
         `PASSENGER`,
         traveler ? `${traveler.first_name} ${traveler.last_name}` : 'N/A',
@@ -163,10 +196,9 @@ export default function Dashboard() {
               <p className="text-slate-400 text-sm">{traveler.document_number}</p>
             </div>
           )}
-
-          <div className="flex justify-between font-bold text-lg mb-6">
-            <span>Total</span>
-            <span className="text-blue-400">{booking.currency} {parseFloat(booking.total_amount).toFixed(2)}</span>
+          <div className="flex justify-between items-start font-bold text-lg mb-6">
+            <span className="mt-2">Total</span>
+            <PricingDisplay booking={booking} size="large" />
           </div>
 
           {booking.status === 'Pending' && (
@@ -231,7 +263,7 @@ export default function Dashboard() {
         {traveler && (
           <p className="text-slate-400 text-xs">{traveler.first_name} {traveler.last_name} · {traveler.document_number}</p>
         )}
-        <p className="text-blue-400 font-bold mt-2">{booking.currency} {parseFloat(booking.total_amount).toFixed(2)}</p>
+        <PricingDisplay booking={booking} />
       </div>
     );
   };
@@ -265,7 +297,7 @@ export default function Dashboard() {
         {traveler && (
           <p className="text-slate-400 text-xs">{traveler.first_name} {traveler.last_name} · {traveler.document_number}</p>
         )}
-        <p className="text-blue-400 font-bold mt-2">{booking.currency} {parseFloat(booking.total_amount).toFixed(2)}</p>
+        <PricingDisplay booking={booking} />
       </div>
     );
   };
