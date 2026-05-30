@@ -15,9 +15,13 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen flex bg-slate-950 text-white">
       <aside className="w-56 border-r border-slate-800 p-4 flex flex-col gap-1 sticky top-0 h-screen">
-        <Link to="/" className="text-blue-400 font-bold text-lg mb-6 px-2">
-          rezio
+        <Link
+          to="/"
+          className="text-lg font-semibold text-white tracking-tight"
+        >
+          Rez<span className="text-blue-400">Io</span>
         </Link>
+        
         <p className="text-xs text-slate-500 uppercase tracking-widest px-2 mb-2">
           Admin Panel
         </p>

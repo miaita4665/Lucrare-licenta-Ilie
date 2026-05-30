@@ -7,7 +7,12 @@ export default function AuthLayout() {
         to="/"
         className="text-2xl font-bold text-sky-400 mb-8 tracking-tight"
       >
-        Rez-Io
+        <Link
+          to="/"
+          className="text-lg font-semibold text-white tracking-tight"
+        >
+          Rez<span className="text-blue-400">Io</span>
+        </Link>
       </Link>
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8">
         <Outlet />

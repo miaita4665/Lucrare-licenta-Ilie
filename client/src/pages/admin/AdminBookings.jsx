@@ -57,7 +57,6 @@ export default function AdminBookings() {
               const hotel = booking.items.find(i => i.item_type === 'Hotel')?.hotel
               const traveler = booking.travelers?.[0]
               const segment = flight?.segments?.[0]
-
               return (
                 <tr key={booking.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
                   <td className="px-4 py-3 text-slate-400">#{booking.id}</td>
