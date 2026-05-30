@@ -2,6 +2,7 @@ const express = require('express');
 const Stripe = require("stripe")
 const router = express.Router();
 const stripe = Stripe(process.env.STRIPE_API)
+const { restrict } = require('../middleware/authMiddleware')
 const {
   sequelize,
   Booking,
@@ -210,4 +211,58 @@ router.patch("/:id/confirm", protect, async (req, res) => {
   }
 })
 
+// GET /bookings/all — all bookings (admin only)
+router.get('/all', protect, restrict('Admin'), async (req, res) => {
+  try {
+    const bookings = await Booking.findAll({
+      include: [
+        { model: Traveler, as: 'travelers', attributes: ['first_name', 'last_name', 'document_number'] },
+        { model: BookingItem, as: 'items' },
+      ],
+      order: [['created_at', 'DESC']],
+    })
+
+    const enriched = await Promise.all(
+      bookings.map(async (booking) => {
+        const b = booking.toJSON()
+        b.items = await Promise.all(
+          b.items.map(async (item) => {
+            if (item.item_type === 'Flight') {
+              const flight = await Flight.findByPk(item.reference_id, {
+                include: [{ model: FlightSegment, as: 'segments' }],
+              })
+              return { ...item, flight: flight?.toJSON() ?? null }
+            }
+            if (item.item_type === 'Hotel') {
+              const hotel = await Hotel.findByPk(item.reference_id)
+              return { ...item, hotel: hotel?.toJSON() ?? null }
+            }
+            return item
+          })
+        )
+        return b
+      })
+    )
+
+    res.json(enriched)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch bookings' })
+  }
+})
+
+// PATCH /bookings/:id/status — change booking status (admin only)
+router.patch('/:id/status', protect, restrict('Admin'), async (req, res) => {
+  try {
+    const { status } = req.body
+    if (!['Pending', 'Confirmed', 'Cancelled', 'Completed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' })
+    }
+    const booking = await Booking.findByPk(req.params.id)
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    await booking.update({ status })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update status' })
+  }
+})
 module.exports = router;

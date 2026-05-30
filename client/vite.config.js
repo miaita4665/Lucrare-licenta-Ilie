@@ -27,6 +27,10 @@ export default defineConfig({
         target: 'http://node_server:5000',
         changeOrigin: true,
       },
+      "/api": {
+        target: "http://node_server:5000",
+        changeOrigin: true
+      }
     },
   },
 });

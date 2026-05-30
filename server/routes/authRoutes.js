@@ -1,8 +1,8 @@
 'use strict';
-
 const router = require('express').Router();
 const passport = require('../config/passport');
 const jwt = require('jsonwebtoken');
+const { restrict } = require('../middleware/authMiddleware')
 const {
   register,
   login,
@@ -85,5 +85,40 @@ router.get(
     res.redirect(process.env.CLIENT_URL || 'http://localhost:3000');
   }
 );
+// GET /api/auth/users — all users (admin only)
+router.get('/users', protect, restrict('Admin'), async (req, res) => {
+  try {
+    const { User, Role } = require('../models')
+    const users = await User.findAll({
+      attributes: { exclude: ['password_hash'] },
+      include: [{ model: Role, attributes: ['role_name'] }],
+      order: [['created_at', 'DESC']],
+    })
+    res.json(users)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch users' })
+  }
+})
+// PATCH /api/auth/users/:id/role — change role (admin only, not to Admin)
+router.patch('/users/:id/role', protect, restrict('Admin'), async (req, res) => {
+  try {
+    const { User, Role } = require('../models')
+    const { role_name } = req.body
 
+    if (!['Registered User', 'Support Agent'].includes(role_name)) {
+      return res.status(400).json({ error: 'Invalid role' })
+    }
+
+    const role = await Role.findOne({ where: { role_name } })
+    if (!role) return res.status(404).json({ error: 'Role not found' })
+
+    const user = await User.findByPk(req.params.id)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    await user.update({ role_id: role.id })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update role' })
+  }
+})
 module.exports = router;
