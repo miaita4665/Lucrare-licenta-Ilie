@@ -312,4 +312,18 @@ router.patch('/:id/status', protect, restrict('Admin'), async (req, res) => {
   }
 })
 
+router.patch('/:id/cancel', protect, async (req, res) => {
+  try {
+    const booking = await Booking.findByPk(req.params.id)
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    if (booking.user_id !== req.user.id) return res.status(403).json({ error: 'Not your booking' })
+    if (booking.status !== 'Pending') return res.status(400).json({ error: 'Only pending bookings can be cancelled' })
+
+    await booking.update({ status: 'Cancelled' })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to cancel booking' })
+  }
+})
+
 module.exports = router;

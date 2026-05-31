@@ -82,7 +82,6 @@ export default function Dashboard() {
     const segment = flight?.segments?.[0];
 
     const handlePay = () => {
-      // Reconstruct enough state to go to checkout
       navigate('/checkout', {
         state: {
           bookingId: booking.id,
@@ -109,6 +108,26 @@ export default function Dashboard() {
           } : null,
         }
       })
+    }
+    const handleCancel = async () => {
+      if (!confirm('Are you sure you want to cancel this booking?')) return
+      try {
+        const res = await fetch(`/bookings/${booking.id}/cancel`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        if (!res.ok) {
+          const data = await res.json()
+          alert(data.error)
+          return
+        }
+        setBookings(prev => prev.map(b =>
+          b.id === booking.id ? { ...b, status: 'Cancelled' } : b
+        ))
+        onClose()
+      } catch (err) {
+        console.error(err)
+      }
     }
 
     const handleInvoice = () => {
@@ -202,12 +221,20 @@ export default function Dashboard() {
           </div>
 
           {booking.status === 'Pending' && (
-            <button
-              onClick={handlePay}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition mb-2"
-            >
-              <CreditCard className="w-4 h-4" /> Complete payment
-            </button>
+            <>
+              <button
+                onClick={handlePay}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition mb-2"
+              >
+                <CreditCard className="w-4 h-4" /> Complete payment
+              </button>
+              <button
+                onClick={handleCancel}
+                className="w-full bg-red-900/40 hover:bg-red-900/60 text-red-400 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition mb-2"
+              >
+                <XCircle className="w-4 h-4" /> Cancel booking
+              </button>
+            </>
           )}
 
           {booking.status === 'Confirmed' && (

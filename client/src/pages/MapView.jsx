@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { Map } from 'lucide-react';
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_API;
 
@@ -9,11 +10,19 @@ export default function MapView() {
   const map = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [unauthenticated, setUnauthenticated] = useState(false);
 
   useEffect(() => {
     const init = async () => {
       try {
         const res = await fetch('/bookings/my');
+
+        if (res.status === 401 || res.status === 403) {
+          setUnauthenticated(true);
+          setLoading(false);
+          return;
+        }
+        
         if (!res.ok) throw new Error('Failed to fetch bookings');
         const bookings = await res.json();
 
@@ -185,6 +194,19 @@ export default function MapView() {
     return () => map.current?.remove();
   }, []);
 
+  if (unauthenticated) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <h1 className="text-3xl font-bold text-white mb-2">Your travel map</h1>
+        <div className="flex flex-col items-center justify-center rounded-xl bg-slate-800/50 border border-slate-700 text-center"
+            style={{ height: '580px' }}>
+          <Map className="w-12 h-12 text-slate-500 mb-4" strokeWidth={1.5} />
+          <p className="text-slate-300 text-lg font-medium">Sign in to see your travel map</p>
+          <p className="text-slate-500 text-sm mt-1">Your hotels and flights will appear here once you're logged in.</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <h1 className="text-3xl font-bold text-white mb-2">Your travel map</h1>
