@@ -3,16 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Star, BedDouble } from 'lucide-react';
 
 const ATTRIBUTE_LABELS = {
-  quiet: 'Quiet',
-  city_center: 'City center',
-  budget: 'Budget',
-  luxury: 'Luxury',
-  family_friendly: 'Family friendly',
-  beachfront: 'Beachfront',
-  business: 'Business',
-  pet_friendly: 'Pet friendly',
-  spa: 'Spa',
-  rooftop_bar: 'Rooftop bar',
+  quiet: 'Quiet', city_center: 'City center', budget: 'Budget',
+  luxury: 'Luxury', family_friendly: 'Family friendly', beachfront: 'Beachfront',
+  business: 'Business', pet_friendly: 'Pet friendly', spa: 'Spa', rooftop_bar: 'Rooftop bar',
 };
 
 export default function Hotels() {
@@ -26,15 +19,10 @@ export default function Hotels() {
   const debounceRef = useRef(null);
 
   useEffect(() => {
-    if (location.length < 2) {
-      setSuggestions([]);
-      return;
-    }
+    if (location.length < 2) { setSuggestions([]); return; }
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const res = await fetch(
-        `/cities/search?q=${encodeURIComponent(location)}`
-      );
+      const res = await fetch(`/cities/search?q=${encodeURIComponent(location)}`);
       const data = await res.json();
       setSuggestions(data);
     }, 250);
@@ -47,18 +35,12 @@ export default function Hotels() {
       const bookings = await res.json();
       const freq = {};
       bookings.forEach((booking) => {
-        booking.items
-          .filter((i) => i.item_type === 'Hotel' && i.hotel?.attributes)
-          .forEach((i) => {
-            i.hotel.attributes.forEach((attr) => {
-              freq[attr] = (freq[attr] ?? 0) + 1;
-            });
-          });
+        booking.items.filter((i) => i.item_type === 'Hotel' && i.hotel?.attributes).forEach((i) => {
+          i.hotel.attributes.forEach((attr) => { freq[attr] = (freq[attr] ?? 0) + 1; });
+        });
       });
       return freq;
-    } catch {
-      return {};
-    }
+    } catch { return {}; }
   };
 
   const runSearch = async (city) => {
@@ -69,16 +51,12 @@ export default function Hotels() {
     setPreferences(prefs);
     const scored = hotelsRes.map((hotel) => ({
       ...hotel,
-      _score: (hotel.attributes ?? []).reduce(
-        (sum, attr) => sum + (prefs[attr] ?? 0),
-        0
-      ),
+      _score: (hotel.attributes ?? []).reduce((sum, attr) => sum + (prefs[attr] ?? 0), 0),
     }));
     scored.sort((a, b) => b._score - a._score || a.base_price - b.base_price);
     setResults(scored);
   };
 
-  // Auto-search if coming from landing
   useEffect(() => {
     if (state?.selectedCity) runSearch(state.selectedCity);
   }, []);
@@ -94,10 +72,7 @@ export default function Hotels() {
             <input
               placeholder="Search by city (e.g. Paris)"
               value={location}
-              onChange={(e) => {
-                setLocation(e.target.value);
-                setSelectedCity(null);
-              }}
+              onChange={(e) => { setLocation(e.target.value); setSelectedCity(null); }}
               className="bg-transparent text-white p-2 w-full outline-none"
             />
           </div>
@@ -106,17 +81,11 @@ export default function Hotels() {
               {suggestions.map((city) => (
                 <li
                   key={city.id}
-                  onClick={() => {
-                    setLocation(city.name);
-                    setSelectedCity(city);
-                    setSuggestions([]);
-                  }}
+                  onClick={() => { setLocation(city.name); setSelectedCity(city); setSuggestions([]); }}
                   className="px-4 py-2 text-white hover:bg-slate-700 cursor-pointer flex justify-between items-center"
                 >
                   <span>{city.name}</span>
-                  <span className="text-slate-400 text-xs">
-                    {city.admin1}, {city.country}
-                  </span>
+                  <span className="text-slate-400 text-xs">{city.admin1}, {city.country}</span>
                 </li>
               ))}
             </ul>
@@ -132,44 +101,32 @@ export default function Hotels() {
       </div>
 
       {!selectedCity && location.length > 0 && suggestions.length === 0 && (
-        <p className="text-red-400 text-sm mt-2">
-          No city found — try a different name
-        </p>
+        <p className="text-red-400 text-sm mt-2">No city found — try a different name</p>
       )}
 
       {Object.keys(preferences).length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2 items-center">
-          <span className="text-slate-400 text-sm">
-            Sorted by your preferences:
-          </span>
-          {Object.entries(preferences)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 4)
-            .map(([attr]) => (
-              <span
-                key={attr}
-                className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full"
-              >
-                {ATTRIBUTE_LABELS[attr] ?? attr}
-              </span>
-            ))}
+          <span className="text-slate-400 text-sm">Sorted by your preferences:</span>
+          {Object.entries(preferences).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([attr]) => (
+            <span key={attr} className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+              {ATTRIBUTE_LABELS[attr] ?? attr}
+            </span>
+          ))}
         </div>
       )}
 
       <div className="mt-8 grid grid-cols-1 gap-4">
         {results.map((hotel) => (
-          <div
-            key={hotel.id}
-            className="bg-slate-800 p-4 rounded-lg text-white flex justify-between items-center"
-          >
-            <div>
+          <div key={hotel.id} className="bg-slate-800 p-4 rounded-lg text-white flex justify-between items-center">
+            <div
+              className="flex-1 cursor-pointer"
+              onClick={() => navigate(`/hotels/${hotel.id}`, { state: { hotel, city: selectedCity } })}
+            >
               <div className="flex items-center gap-2">
                 <BedDouble className="w-5 h-5 text-blue-400" />
                 <p className="text-lg font-bold">{hotel.name}</p>
                 {hotel._score > 0 && (
-                  <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full">
-                    Recommended
-                  </span>
+                  <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full">Recommended</span>
                 )}
               </div>
               <div className="flex items-center gap-1 mt-1">
@@ -178,37 +135,33 @@ export default function Hotels() {
               </div>
               <div className="flex items-center gap-1 mt-1">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < hotel.stars
-                        ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-slate-500'
-                    }`}
-                  />
+                  <Star key={i} className={`w-4 h-4 ${i < hotel.stars ? 'text-yellow-400 fill-yellow-400' : 'text-slate-500'}`} />
                 ))}
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
                 {hotel.attributes?.map((attr) => (
-                  <span
-                    key={attr}
-                    className={`text-xs px-2 py-1 rounded-full ${preferences[attr] ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}
-                  >
+                  <span key={attr} className={`text-xs px-2 py-1 rounded-full ${preferences[attr] ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}>
                     {ATTRIBUTE_LABELS[attr] ?? attr}
                   </span>
                 ))}
               </div>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-blue-400">
-                {hotel.currency} {hotel.base_price}
-              </p>
-              <button
-                onClick={() => navigate('/booking', { state: { hotel } })}
-                className="mt-2 bg-blue-600 px-4 py-2 rounded"
-              >
-                Book
-              </button>
+              <p className="text-2xl font-bold text-blue-400">{hotel.currency} {hotel.base_price}</p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => navigate(`/hotels/${hotel.id}`, { state: { hotel, city: selectedCity } })}
+                  className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm transition"
+                >
+                  Details
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigate('/booking', { state: { hotel, city: selectedCity } }); }}
+                  className="bg-blue-600 px-4 py-2 rounded"
+                >
+                  Book
+                </button>
+              </div>
             </div>
           </div>
         ))}
