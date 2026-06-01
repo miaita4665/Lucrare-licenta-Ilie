@@ -10,13 +10,20 @@ const ATTRIBUTE_LABELS = {
 
 export default function Hotels() {
   const { state } = useLocation();
-  const [location, setLocation] = useState(state?.selectedCity?.name ?? '');
-  const [suggestions, setSuggestions] = useState([]);
-  const [selectedCity, setSelectedCity] = useState(state?.selectedCity ?? null);
-  const [results, setResults] = useState([]);
-  const [preferences, setPreferences] = useState({});
   const navigate = useNavigate();
   const debounceRef = useRef(null);
+
+  const getSavedState = (key, fallback) => {
+    const saved = sessionStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  };
+
+
+  const [location, setLocation] = useState(() => getSavedState('hotel_location', state?.selectedCity?.name ?? ''));
+  const [selectedCity, setSelectedCity] = useState(() => getSavedState('hotel_selectedCity', state?.selectedCity ?? null));
+  const [results, setResults] = useState(() => getSavedState('hotel_results', []));
+  const [preferences, setPreferences] = useState(() => getSavedState('hotel_prefs', {}));
+  const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
     if (location.length < 2) { setSuggestions([]); return; }
@@ -43,18 +50,27 @@ export default function Hotels() {
     } catch { return {}; }
   };
 
+
   const runSearch = async (city) => {
     const [hotelsRes, prefs] = await Promise.all([
       fetch(`/hotels/search?location=${city.name}`).then((r) => r.json()),
       fetchPreferences(),
     ]);
-    setPreferences(prefs);
+    
     const scored = hotelsRes.map((hotel) => ({
       ...hotel,
       _score: (hotel.attributes ?? []).reduce((sum, attr) => sum + (prefs[attr] ?? 0), 0),
     }));
     scored.sort((a, b) => b._score - a._score || a.base_price - b.base_price);
+    
     setResults(scored);
+    setPreferences(prefs);
+
+    // Save to sessionStorage
+    sessionStorage.setItem('hotel_results', JSON.stringify(scored));
+    sessionStorage.setItem('hotel_prefs', JSON.stringify(prefs));
+    sessionStorage.setItem('hotel_location', JSON.stringify(city.name));
+    sessionStorage.setItem('hotel_selectedCity', JSON.stringify(city));
   };
 
   useEffect(() => {
