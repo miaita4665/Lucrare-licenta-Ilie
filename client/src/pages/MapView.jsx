@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Map } from 'lucide-react';
+import { Map as MapIcon } from 'lucide-react';
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_API;
 
@@ -200,7 +200,7 @@ export default function MapView() {
         <h1 className="text-3xl font-bold text-white mb-2">Your travel map</h1>
         <div className="flex flex-col items-center justify-center rounded-xl bg-slate-800/50 border border-slate-700 text-center"
             style={{ height: '580px' }}>
-          <Map className="w-12 h-12 text-slate-500 mb-4" strokeWidth={1.5} />
+          <MapIcon className="w-12 h-12 text-slate-500 mb-4" strokeWidth={1.5} />
           <p className="text-slate-300 text-lg font-medium">Sign in to see your travel map</p>
           <p className="text-slate-500 text-sm mt-1">Your hotels and flights will appear here once you're logged in.</p>
         </div>
