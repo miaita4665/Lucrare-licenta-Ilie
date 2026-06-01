@@ -25,14 +25,22 @@ const randomDateTime = (date, addHours = 0) => {
   return base.toISOString();
 };
 
+const mockFlightCache = {};
+
 router.get('/search', async (req, res) => {
   const { from, to, date } = req.query;
 
   if (!date) return res.status(400).json({ error: 'Date is required' });
 
+  const cacheKey = `${from}-${to}-${date}`;
+
+  if (mockFlightCache[cacheKey]) {
+    return res.json(mockFlightCache[cacheKey]);
+  }
+
   const flights = Array.from({ length: 10 }, (_, i) => {
     const departure = randomDateTime(date, 0);
-    const arrival = randomDateTime(date, 2); // always 2h after departure base
+    const arrival = randomDateTime(date, 2);
 
     return {
       id: String(i + 1),
@@ -46,6 +54,7 @@ router.get('/search', async (req, res) => {
     };
   });
 
+  mockFlightCache[cacheKey] = flights;
   res.json(flights);
 });
 

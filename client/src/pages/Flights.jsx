@@ -50,13 +50,21 @@ export default function Flights() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  const [from, setFrom] = useState(state?.selectedFrom ? `${state.selectedFrom.code} — ${state.selectedFrom.city}` : '');
-  const [to, setTo] = useState(state?.selectedTo ? `${state.selectedTo.code} — ${state.selectedTo.city}` : '');
-  const [selectedFrom, setSelectedFrom] = useState(state?.selectedFrom ?? null);
-  const [selectedTo, setSelectedTo] = useState(state?.selectedTo ?? null);
-  const [date, setDate] = useState(state?.date ?? '');
-  const [results, setResults] = useState([]);
-  const [preferences, setPreferences] = useState({ destinations: {}, airlines: {} });
+
+  const getSavedState = (key, fallback) => {
+    const saved = sessionStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  };
+
+  const [from, setFrom] = useState(() => getSavedState('flight_from', state?.selectedFrom ? `${state.selectedFrom.code} — ${state.selectedFrom.city}` : ''));
+  const [to, setTo] = useState(() => getSavedState('flight_to', state?.selectedTo ? `${state.selectedTo.code} — ${state.selectedTo.city}` : ''));
+  const [selectedFrom, setSelectedFrom] = useState(() => getSavedState('flight_selectedFrom', state?.selectedFrom ?? null));
+  const [selectedTo, setSelectedTo] = useState(() => getSavedState('flight_selectedTo', state?.selectedTo ?? null));
+  const [date, setDate] = useState(() => getSavedState('flight_date', state?.date ?? ''));
+  
+
+  const [results, setResults] = useState(() => getSavedState('flight_results', []));
+  const [preferences, setPreferences] = useState(() => getSavedState('flight_prefs', { destinations: {}, airlines: {} }));
 
   const fetchPreferences = async () => {
     try {
@@ -80,15 +88,25 @@ export default function Flights() {
   const runSearch = async (from, to, date) => {
     const [flightsRes, prefs] = await Promise.all([
       fetch(`/flights/search?from=${from.code}&to=${to.code}&date=${date}&fromCity=${encodeURIComponent(from.city)}&toCity=${encodeURIComponent(to.city)}`).then((r) => r.json()),
-      fetchPreferences(),
+      fetchPreferences(), 
     ]);
-    setPreferences(prefs);
+    
     const scored = flightsRes.map((f) => ({
       ...f,
       _score: (prefs.destinations[f.to] ?? 0) + (prefs.airlines[f.airline] ?? 0),
     }));
     scored.sort((a, b) => b._score - a._score || a.price - b.price);
+
     setResults(scored);
+    setPreferences(prefs);
+
+    sessionStorage.setItem('flight_results', JSON.stringify(scored));
+    sessionStorage.setItem('flight_prefs', JSON.stringify(prefs));
+    sessionStorage.setItem('flight_from', JSON.stringify(`${from.code} — ${from.city}`));
+    sessionStorage.setItem('flight_to', JSON.stringify(`${to.code} — ${to.city}`));
+    sessionStorage.setItem('flight_selectedFrom', JSON.stringify(from));
+    sessionStorage.setItem('flight_selectedTo', JSON.stringify(to));
+    sessionStorage.setItem('flight_date', JSON.stringify(date));
   };
 
   useEffect(() => {
