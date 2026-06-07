@@ -3,12 +3,12 @@ const router = require('express').Router();
 const passport = require('../config/passport');
 const jwt = require('jsonwebtoken');
 const { restrict } = require('../middleware/authMiddleware')
-const {
-  register,
-  login,
-  logout,
-  me,
-} = require('../controllers/authController');
+const { register,  
+  login, 
+  logout, 
+  me, 
+  updateMe, 
+  changePassword } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 const { body, validationResult } = require('express-validator');
 
@@ -36,23 +36,18 @@ const validate = (req, res, next) => {
   next();
 };
 
-//  Email / Password routes
-
-// POST /api/auth/register
 router.post('/register', registerRules, validate, register);
 
-// POST /api/auth/login
 router.post('/login', loginRules, validate, login);
 
-// POST /api/auth/logout
 router.post('/logout', logout);
 
-// GET /api/auth/me  (protected)
 router.get('/me', protect, me);
 
-//  Google OAuth routes
+router.patch('/me', protect, updateMe); 
 
-// GET /api/auth/google  → redirects to Google
+router.patch('/me/password', protect, changePassword);
+
 router.get(
   '/google',
   passport.authenticate('google', {
@@ -121,4 +116,6 @@ router.patch('/users/:id/role', protect, restrict('Admin'), async (req, res) => 
     res.status(500).json({ error: 'Failed to update role' })
   }
 })
+
+
 module.exports = router;
