@@ -332,7 +332,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-white">Welcome back, {user?.first_name} 👋</h1>
+        <h1 className="text-3xl font-bold text-white">Welcome back, {user?.first_name} </h1>
         <p className="text-slate-400 mt-1">{user?.email}</p>
       </div>
 
