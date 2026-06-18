@@ -2,15 +2,24 @@
 const router = require('express').Router();
 const passport = require('../config/passport');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const { restrict } = require('../middleware/authMiddleware')
-const { register,  
-  login, 
-  logout, 
-  me, 
-  updateMe, 
+const { register,
+  login,
+  logout,
+  me,
+  updateMe,
   changePassword } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 const { body, validationResult } = require('express-validator');
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts, please try again later.' },
+});
 
 //  Validation rules
 
@@ -36,9 +45,9 @@ const validate = (req, res, next) => {
   next();
 };
 
-router.post('/register', registerRules, validate, register);
+router.post('/register', authLimiter, registerRules, validate, register);
 
-router.post('/login', loginRules, validate, login);
+router.post('/login', authLimiter, loginRules, validate, login);
 
 router.post('/logout', logout);
 
