@@ -55,12 +55,13 @@ export default function Dashboard() {
   };
 
   const PricingDisplay = ({ booking, size = 'normal' }) => {
-    const finalTotal = parseFloat(booking.total_amount);
     const textSize = size === 'large' ? 'text-xl' : 'text-lg';
 
     if (booking.PromoCode) {
+      // total_amount is the pre-discount (original) price stored at booking creation
+      const originalPrice = parseFloat(booking.total_amount);
       const discountPercent = parseFloat(booking.PromoCode.discount_percent);
-      const originalPrice = finalTotal / (1 - discountPercent / 100);
+      const finalTotal = originalPrice * (1 - discountPercent / 100);
       const discountAmount = originalPrice - finalTotal;
 
       return (
@@ -82,7 +83,7 @@ export default function Dashboard() {
 
     return (
       <p className={`text-blue-400 font-bold mt-2 ${textSize}`}>
-        {booking.currency} {finalTotal.toFixed(2)}
+        {booking.currency} {parseFloat(booking.total_amount).toFixed(2)}
       </p>
     );
   };
@@ -167,7 +168,11 @@ export default function Dashboard() {
           : '',
         ``,
         `========================`,
-        `TOTAL: ${booking.currency} ${parseFloat(booking.total_amount).toFixed(2)}`,
+        `TOTAL: ${booking.currency} ${(
+          booking.PromoCode
+            ? parseFloat(booking.total_amount) * (1 - parseFloat(booking.PromoCode.discount_percent) / 100)
+            : parseFloat(booking.total_amount)
+        ).toFixed(2)}`,
       ]
         .filter(Boolean)
         .join('\n');
