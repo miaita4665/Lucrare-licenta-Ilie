@@ -254,8 +254,8 @@ router.patch("/:id/confirm", protect, async (req, res) => {
   }
 })
 
-// GET /bookings/all — all bookings (admin only)
-router.get('/all', protect, restrict('Admin'), async (req, res) => {
+// GET /bookings/all — all bookings (admin + support agent)
+router.get('/all', protect, restrict('Admin', 'Support Agent'), async (req, res) => {
   try {
     const bookings = await Booking.findAll({
       include: [
@@ -296,8 +296,8 @@ router.get('/all', protect, restrict('Admin'), async (req, res) => {
   }
 })
 
-// PATCH /bookings/:id/status — change booking status (admin only)
-router.patch('/:id/status', protect, restrict('Admin'), async (req, res) => {
+// PATCH /bookings/:id/status — change booking status (admin + support agent)
+router.patch('/:id/status', protect, restrict('Admin', 'Support Agent'), async (req, res) => {
   try {
     const { status } = req.body
     if (!['Pending', 'Confirmed', 'Cancelled', 'Completed'].includes(status)) {

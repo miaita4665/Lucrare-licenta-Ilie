@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useState, useRef, useEffect } from 'react';
 
 export default function MainLayout() {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isAgent, logout } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -43,9 +43,9 @@ export default function MainLayout() {
           <Link to="/map" className="text-slate-400 hover:text-white transition">
             Map
           </Link>
-          {isAdmin && (
+          {(isAdmin || isAgent) && (
             <Link to="/admin" className="text-amber-400 hover:text-amber-300 transition">
-              Admin
+              {isAgent && !isAdmin ? 'Agent Panel' : 'Admin'}
             </Link>
           )}
         </div>
