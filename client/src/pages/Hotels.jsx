@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { MapPin, Star, BedDouble } from 'lucide-react';
 
 const ATTRIBUTE_LABELS = {
@@ -8,22 +9,54 @@ const ATTRIBUTE_LABELS = {
   business: 'Business', pet_friendly: 'Pet friendly', spa: 'Spa', rooftop_bar: 'Rooftop bar',
 };
 
+const fetchPreferences = async () => {
+  try {
+    const res = await fetch('/bookings/my');
+    if (!res.ok) return {};
+    const bookings = await res.json();
+    const freq = {};
+    bookings.forEach((booking) => {
+      booking.items
+        .filter((i) => i.item_type === 'Hotel' && i.hotel?.attributes)
+        .forEach((i) => {
+          i.hotel.attributes.forEach((attr) => { freq[attr] = (freq[attr] ?? 0) + 1; });
+        });
+    });
+    return freq;
+  } catch {
+    return {};
+  }
+};
+
+const getSavedState = (key, fallback) => {
+  try {
+    const saved = sessionStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export default function Hotels() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const debounceRef = useRef(null);
 
-  const getSavedState = (key, fallback) => {
-    const saved = sessionStorage.getItem(key);
-    return saved ? JSON.parse(saved) : fallback;
-  };
-
-
-  const [location, setLocation] = useState(() => getSavedState('hotel_location', state?.selectedCity?.name ?? ''));
-  const [selectedCity, setSelectedCity] = useState(() => getSavedState('hotel_selectedCity', state?.selectedCity ?? null));
-  const [results, setResults] = useState(() => getSavedState('hotel_results', []));
-  const [preferences, setPreferences] = useState(() => getSavedState('hotel_prefs', {}));
+  // Navigation state takes priority over sessionStorage
+  const [selectedCity, setSelectedCity] = useState(
+    state?.selectedCity ?? getSavedState('hotel_selectedCity', null)
+  );
+  const [location, setLocation] = useState(
+    state?.selectedCity?.name ?? getSavedState('hotel_location', '')
+  );
   const [suggestions, setSuggestions] = useState([]);
+
+  useEffect(() => {
+    if (selectedCity) {
+      sessionStorage.setItem('hotel_selectedCity', JSON.stringify(selectedCity));
+      sessionStorage.setItem('hotel_location', JSON.stringify(selectedCity.name));
+    }
+  }, [selectedCity]);
 
   useEffect(() => {
     if (location.length < 2) { setSuggestions([]); return; }
@@ -35,47 +68,25 @@ export default function Hotels() {
     }, 250);
   }, [location]);
 
-  const fetchPreferences = async () => {
-    try {
-      const res = await fetch('/bookings/my');
-      if (!res.ok) return {};
-      const bookings = await res.json();
-      const freq = {};
-      bookings.forEach((booking) => {
-        booking.items.filter((i) => i.item_type === 'Hotel' && i.hotel?.attributes).forEach((i) => {
-          i.hotel.attributes.forEach((attr) => { freq[attr] = (freq[attr] ?? 0) + 1; });
-        });
-      });
-      return freq;
-    } catch { return {}; }
-  };
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['hotels', selectedCity?.name],
+    queryFn: async () => {
+      const [hotelsRes, prefs] = await Promise.all([
+        fetch(`/hotels/search?location=${encodeURIComponent(selectedCity.name)}`).then((r) => r.json()),
+        fetchPreferences(),
+      ]);
+      const scored = hotelsRes.map((hotel) => ({
+        ...hotel,
+        _score: (hotel.attributes ?? []).reduce((sum, attr) => sum + (prefs[attr] ?? 0), 0),
+      }));
+      scored.sort((a, b) => b._score - a._score || a.base_price - b.base_price);
+      return { hotels: scored, preferences: prefs };
+    },
+    enabled: !!selectedCity,
+  });
 
-
-  const runSearch = async (city) => {
-    const [hotelsRes, prefs] = await Promise.all([
-      fetch(`/hotels/search?location=${city.name}`).then((r) => r.json()),
-      fetchPreferences(),
-    ]);
-    
-    const scored = hotelsRes.map((hotel) => ({
-      ...hotel,
-      _score: (hotel.attributes ?? []).reduce((sum, attr) => sum + (prefs[attr] ?? 0), 0),
-    }));
-    scored.sort((a, b) => b._score - a._score || a.base_price - b.base_price);
-    
-    setResults(scored);
-    setPreferences(prefs);
-
-    // Save to sessionStorage
-    sessionStorage.setItem('hotel_results', JSON.stringify(scored));
-    sessionStorage.setItem('hotel_prefs', JSON.stringify(prefs));
-    sessionStorage.setItem('hotel_location', JSON.stringify(city.name));
-    sessionStorage.setItem('hotel_selectedCity', JSON.stringify(city));
-  };
-
-  useEffect(() => {
-    if (state?.selectedCity) runSearch(state.selectedCity);
-  }, []);
+  const results = data?.hotels ?? [];
+  const preferences = data?.preferences ?? {};
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
@@ -108,11 +119,11 @@ export default function Hotels() {
           )}
         </div>
         <button
-          onClick={() => selectedCity && runSearch(selectedCity)}
-          disabled={!selectedCity}
+          onClick={() => selectedCity && refetch()}
+          disabled={!selectedCity || isLoading}
           className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
         >
-          Search
+          {isLoading ? 'Searching...' : 'Search'}
         </button>
       </div>
 

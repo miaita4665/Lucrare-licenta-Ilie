@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -8,23 +8,21 @@ export default function Booking() {
   const { user } = useAuth();
   const { flight, hotel } = state ?? {};
 
-  const [form, setForm] = useState({
-    firstName: user?.first_name ?? '',
-    lastName: user?.last_name ?? '',
-    email: user?.email ?? '',
-    passport: '',
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm({
+    defaultValues: {
+      firstName: user?.first_name ?? '',
+      lastName: user?.last_name ?? '',
+      email: user?.email ?? '',
+      passport: '',
+    },
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const onSubmit = async (form) => {
     try {
       const res = await fetch('/bookings', {
         method: 'POST',
@@ -39,9 +37,7 @@ export default function Booking() {
         state: { flight, hotel, passenger: form, bookingId: data.bookingId, total: data.total },
       });
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setError('root', { message: err.message });
     }
   };
 
@@ -70,61 +66,53 @@ export default function Booking() {
       </div>
 
       {/* Passenger form */}
-      <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-4">
         <div className="flex gap-4">
           <div className="flex-1">
             <label className="text-slate-400 text-sm">First name</label>
             <input
-              name="firstName"
-              required
-              value={form.firstName}
-              onChange={handleChange}
+              {...register('firstName', { required: 'First name is required.' })}
               className="mt-1 w-full p-2 rounded bg-slate-700 text-white"
             />
+            {errors.firstName && <p className="text-red-400 text-xs mt-1">{errors.firstName.message}</p>}
           </div>
           <div className="flex-1">
             <label className="text-slate-400 text-sm">Last name</label>
             <input
-              name="lastName"
-              required
-              value={form.lastName}
-              onChange={handleChange}
+              {...register('lastName', { required: 'Last name is required.' })}
               className="mt-1 w-full p-2 rounded bg-slate-700 text-white"
             />
+            {errors.lastName && <p className="text-red-400 text-xs mt-1">{errors.lastName.message}</p>}
           </div>
         </div>
 
         <div>
           <label className="text-slate-400 text-sm">Email</label>
           <input
-            name="email"
             type="email"
-            required
-            value={form.email}
-            onChange={handleChange}
+            {...register('email', { required: 'Email is required.' })}
             className="mt-1 w-full p-2 rounded bg-slate-700 text-white"
           />
+          {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
         </div>
 
         <div>
           <label className="text-slate-400 text-sm">Passport number</label>
           <input
-            name="passport"
-            required
-            value={form.passport}
-            onChange={handleChange}
+            {...register('passport', { required: 'Passport number is required.' })}
             className="mt-1 w-full p-2 rounded bg-slate-700 text-white"
           />
+          {errors.passport && <p className="text-red-400 text-xs mt-1">{errors.passport.message}</p>}
         </div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {errors.root && <p className="text-red-400 text-sm">{errors.root.message}</p>}
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={isSubmitting}
           className="mt-4 bg-blue-600 text-white px-6 py-3 rounded font-bold disabled:opacity-50"
         >
-          {loading ? 'Saving...' : 'Continue to checkout →'}
+          {isSubmitting ? 'Saving...' : 'Continue to checkout →'}
         </button>
       </form>
     </div>

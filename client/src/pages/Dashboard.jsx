@@ -1,31 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plane, Hotel, Clock, CheckCircle, XCircle, FileText, CreditCard, Tag } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedBooking, setSelectedBooking] = useState(null)
+  const queryClient = useQueryClient();
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const res = await fetch('/bookings/my');
+  const { data: bookings = [], isLoading, isError, error } = useQuery({
+    queryKey: ['my-bookings'],
+    queryFn: async () => {
+      const res = await fetch('/bookings/my');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      return data;
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (bookingId) => {
+      const res = await fetch(`/bookings/${bookingId}/cancel`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        setBookings(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        throw new Error(data.error);
       }
-    };
-    fetchBookings();
-  }, []);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    },
+    onError: (err) => {
+      alert(err.message);
+    },
+  });
 
   const flightBookings = bookings.filter((b) => b.items.some((i) => i.item_type === 'Flight'));
   const hotelBookings = bookings.filter((b) => b.items.some((i) => i.item_type === 'Hotel'));
@@ -41,13 +53,14 @@ export default function Dashboard() {
     if (status === 'Cancelled') return 'text-red-400';
     return 'text-yellow-400';
   };
-  const PricingDisplay = ({ booking, size = "normal" }) => {
+
+  const PricingDisplay = ({ booking, size = 'normal' }) => {
     const finalTotal = parseFloat(booking.total_amount);
-    const textSize = size === "large" ? "text-xl" : "text-lg";
+    const textSize = size === 'large' ? 'text-xl' : 'text-lg';
 
     if (booking.PromoCode) {
       const discountPercent = parseFloat(booking.PromoCode.discount_percent);
-      const originalPrice = finalTotal / (1 - (discountPercent / 100));
+      const originalPrice = finalTotal / (1 - discountPercent / 100);
       const discountAmount = originalPrice - finalTotal;
 
       return (
@@ -74,7 +87,6 @@ export default function Dashboard() {
     );
   };
 
-  // Modal for booking details
   const BookingModal = ({ booking, onClose }) => {
     const flight = booking.items.find((i) => i.item_type === 'Flight')?.flight;
     const hotel = booking.items.find((i) => i.item_type === 'Hotel')?.hotel;
@@ -87,48 +99,39 @@ export default function Dashboard() {
           bookingId: booking.id,
           total: booking.total_amount,
           currency: booking.currency,
-          flight: flight ? {
-            airline: flight.airline_code,
-            from: segment?.origin_code,
-            to: segment?.destination_code,
-            departure: segment?.departure_time,
-            arrival: segment?.arrival_time,
-            price: flight.total_base_price,
-          } : null,
-          hotel: hotel ? {
-            name: hotel.name,
-            location: hotel.location,
-            base_price: hotel.base_price,
-            currency: hotel.currency,
-          } : null,
-          passenger: traveler ? {
-            firstName: traveler.first_name,
-            lastName: traveler.last_name,
-            email: user?.email,
-          } : null,
-        }
-      })
-    }
-    const handleCancel = async () => {
-      if (!confirm('Are you sure you want to cancel this booking?')) return
-      try {
-        const res = await fetch(`/bookings/${booking.id}/cancel`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-        })
-        if (!res.ok) {
-          const data = await res.json()
-          alert(data.error)
-          return
-        }
-        setBookings(prev => prev.map(b =>
-          b.id === booking.id ? { ...b, status: 'Cancelled' } : b
-        ))
-        onClose()
-      } catch (err) {
-        console.error(err)
-      }
-    }
+          flight: flight
+            ? {
+                airline: flight.airline_code,
+                from: segment?.origin_code,
+                to: segment?.destination_code,
+                departure: segment?.departure_time,
+                arrival: segment?.arrival_time,
+                price: flight.total_base_price,
+              }
+            : null,
+          hotel: hotel
+            ? {
+                name: hotel.name,
+                location: hotel.location,
+                base_price: hotel.base_price,
+                currency: hotel.currency,
+              }
+            : null,
+          passenger: traveler
+            ? {
+                firstName: traveler.first_name,
+                lastName: traveler.last_name,
+                email: user?.email,
+              }
+            : null,
+        },
+      });
+    };
+
+    const handleCancel = () => {
+      if (!confirm('Are you sure you want to cancel this booking?')) return;
+      cancelMutation.mutate(booking.id, { onSuccess: () => onClose() });
+    };
 
     const handleInvoice = () => {
       const lines = [
@@ -143,39 +146,44 @@ export default function Dashboard() {
         traveler ? `${traveler.first_name} ${traveler.last_name}` : 'N/A',
         traveler ? `Passport: ${traveler.document_number}` : '',
         ``,
-        flight && segment ? [
-          `FLIGHT`,
-          `${flight.airline_code}`,
-          `${segment.origin_code} → ${segment.destination_code}`,
-          `Departure: ${new Date(segment.departure_time).toLocaleString()}`,
-          `Arrival: ${new Date(segment.arrival_time).toLocaleString()}`,
-          `Price: ${booking.currency} ${flight.total_base_price}`,
-        ].join('\n') : '',
-        hotel ? [
-          ``,
-          `HOTEL`,
-          `${hotel.name}`,
-          `${hotel.location}`,
-          `Price/night: ${hotel.currency} ${hotel.base_price}`,
-        ].join('\n') : '',
+        flight && segment
+          ? [
+              `FLIGHT`,
+              `${flight.airline_code}`,
+              `${segment.origin_code} → ${segment.destination_code}`,
+              `Departure: ${new Date(segment.departure_time).toLocaleString()}`,
+              `Arrival: ${new Date(segment.arrival_time).toLocaleString()}`,
+              `Price: ${booking.currency} ${flight.total_base_price}`,
+            ].join('\n')
+          : '',
+        hotel
+          ? [
+              ``,
+              `HOTEL`,
+              `${hotel.name}`,
+              `${hotel.location}`,
+              `Price/night: ${hotel.currency} ${hotel.base_price}`,
+            ].join('\n')
+          : '',
         ``,
         `========================`,
         `TOTAL: ${booking.currency} ${parseFloat(booking.total_amount).toFixed(2)}`,
-      ].filter(Boolean).join('\n')
+      ]
+        .filter(Boolean)
+        .join('\n');
 
-      const blob = new Blob([lines], { type: 'text/plain' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `rezio-booking-${booking.id}.txt`
-      a.click()
-      URL.revokeObjectURL(url)
-    }
+      const blob = new Blob([lines], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rezio-booking-${booking.id}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
 
     return (
       <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4" onClick={onClose}>
-        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md text-white" onClick={e => e.stopPropagation()}>
-
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md text-white" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-slate-400 text-xs">Booking #{booking.id}</p>
@@ -215,6 +223,7 @@ export default function Dashboard() {
               <p className="text-slate-400 text-sm">{traveler.document_number}</p>
             </div>
           )}
+
           <div className="flex justify-between items-start font-bold text-lg mb-6">
             <span className="mt-2">Total</span>
             <PricingDisplay booking={booking} size="large" />
@@ -230,9 +239,10 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={handleCancel}
-                className="w-full bg-red-900/40 hover:bg-red-900/60 text-red-400 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition mb-2"
+                disabled={cancelMutation.isPending}
+                className="w-full bg-red-900/40 hover:bg-red-900/60 disabled:opacity-50 text-red-400 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition mb-2"
               >
-                <XCircle className="w-4 h-4" /> Cancel booking
+                <XCircle className="w-4 h-4" /> {cancelMutation.isPending ? 'Cancelling...' : 'Cancel booking'}
               </button>
             </>
           )}
@@ -251,8 +261,8 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   const FlightCard = ({ booking }) => {
     const flight = booking.items.find((i) => i.item_type === 'Flight')?.flight;
@@ -332,7 +342,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-white">Welcome back, {user?.first_name} </h1>
+        <h1 className="text-3xl font-bold text-white">Welcome back, {user?.first_name}</h1>
         <p className="text-slate-400 mt-1">{user?.email}</p>
       </div>
 
@@ -349,10 +359,10 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {loading && <p className="text-slate-400">Loading bookings...</p>}
-      {error && <p className="text-red-400">{error}</p>}
+      {isLoading && <p className="text-slate-400">Loading bookings...</p>}
+      {isError && <p className="text-red-400">{error?.message}</p>}
 
-      {!loading && !error && (
+      {!isLoading && !isError && (
         <div className="grid grid-cols-2 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -363,11 +373,15 @@ export default function Dashboard() {
             {flightBookings.length === 0 ? (
               <div className="bg-slate-800 rounded-xl p-6 text-center">
                 <p className="text-slate-400 text-sm">No flight bookings yet</p>
-                <button onClick={() => navigate('/flights')} className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Search flights</button>
+                <button onClick={() => navigate('/flights')} className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                  Search flights
+                </button>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {flightBookings.map((b) => <FlightCard key={b.id} booking={b} />)}
+                {flightBookings.map((b) => (
+                  <FlightCard key={b.id} booking={b} />
+                ))}
               </div>
             )}
           </div>
@@ -381,11 +395,15 @@ export default function Dashboard() {
             {hotelBookings.length === 0 ? (
               <div className="bg-slate-800 rounded-xl p-6 text-center">
                 <p className="text-slate-400 text-sm">No hotel bookings yet</p>
-                <button onClick={() => navigate('/hotels')} className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Search hotels</button>
+                <button onClick={() => navigate('/hotels')} className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                  Search hotels
+                </button>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {hotelBookings.map((b) => <HotelCard key={b.id} booking={b} />)}
+                {hotelBookings.map((b) => (
+                  <HotelCard key={b.id} booking={b} />
+                ))}
               </div>
             )}
           </div>
