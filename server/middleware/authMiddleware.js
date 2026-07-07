@@ -3,8 +3,6 @@
 const jwt = require('jsonwebtoken');
 const { User, Role } = require('../models');
 
-// Verifies JWT from cookie and attaches user to req
-
 const protect = async (req, res, next) => {
   try {
     const token = req.cookies?.token;
@@ -32,9 +30,6 @@ const protect = async (req, res, next) => {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
 };
-
-//  Restrict
-// Usage: restrict('Admin', 'Support Agent')
 
 const restrict = (...roles) => {
   return (req, res, next) => {
